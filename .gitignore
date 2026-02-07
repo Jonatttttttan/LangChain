@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+env/
+venv/
+instance/
+.webassets-cache
+*.db
+*.sqlite3
+.env
+config.py
+*.log
+POC_RAG1/token.json
+POC_RAG1/credentials.json
