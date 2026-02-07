@@ -16,7 +16,8 @@ CAMINHO_DB = 'db'
 class DecisaoAgendamento(BaseModel):
     marcar: bool = Field(description="True se o usuário quer marcar consulta")
     medico: str | None = Field(description="Nome do médico, se houver")
-    horario: str | None = Field(description="Horário hh:mm, se houver")
+    horario: str | None = Field(description="Horário hh:mm, se  houver")
+    dia: str | None = Field(description="Dia em 2026-mm-dd, se houver")
     explicacao: str = Field(description="Resumo curto da decisão")
 
 
@@ -90,14 +91,16 @@ def perguntar():
         medico = resposta_decisão.medico
         horario = resposta_decisão.horario
         marcar = resposta_decisão.marcar
+        dia = resposta_decisão.dia
 
         print(resposta_decisão.marcar)
         print(resposta_decisão.medico)
         print(resposta_decisão.horario)
+        print(resposta_decisão.dia)
 
 
         if marcar:
-            criar_evento(summary=medico, time=horario + ":00")
+            criar_evento(summary=medico,date = dia, time=horario + ":00")
             print("Horário marcado com sucesso")
 
     return
