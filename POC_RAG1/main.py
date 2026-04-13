@@ -5,6 +5,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 
+
 from dotenv import load_dotenv
 
 from service_2 import criar_evento
@@ -34,7 +35,7 @@ Utilize a seguinte base de conhecimento para responder a pergunta:
 def perguntar():
     interruptor = False
     A = []
-    while not interruptor and len(A) < 5:
+    while not interruptor and len(A) < 10:
         #if len(A) >= 1:
             # prompt_template = prompt_template.replace("e se apresente como Ophélia", "")
 
@@ -100,7 +101,10 @@ def perguntar():
 
 
         if marcar:
-            criar_evento(summary=medico,date = dia, time=horario + ":00")
+            if medico is None or horario is None or dia is None:
+                print("Nenhum resultado foi encontrado.")
+            else:
+                criar_evento(summary=medico,date = dia, time=horario + ":00")
             print("Horário marcado com sucesso")
 
     return
