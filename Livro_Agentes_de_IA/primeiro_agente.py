@@ -7,7 +7,8 @@ from langchain_core.messages.tool import ToolMessage
 from langgraph.graph import StateGraph, START, END
 
 import dotenv
-
+"""Agente responsável por decidir se uma ordem deve ser cancelada ou não com base na entrada do usuário.
+Arquitetura de langgraph"""
 
 dotenv.load_dotenv()
 
@@ -32,11 +33,11 @@ def call_model(state: AgentState):
     prompt = (
         f'''Você é um agente de suporte de e-commerce.
         ORDER ID: {order["order_id"]}
-        Se o cliente pedir para cancelar, chame cancel_order(order_id)
+        Se o cliente pedir para cancelar, chame cancel_order(order_id) e escreva o nome da função cancel_order
         e então envie uma confirmação simples.
         Caso contrário, apenas responda normalmente.'''
         ).strip()
-    model = ChatOpenAI(model="gpt-5", temperature=0).bind_tools([call_model])
+    model = ChatOpenAI(model="gpt-5", temperature=0).bind_tools([cancel_order])
 
 
     full = [SystemMessage(content=prompt)] + msgs
@@ -75,13 +76,24 @@ def construct_graph():
     g.add_edge("assistant", END)
     return g.compile()
 
+# Avaliação mínima
+
+
 graph = construct_graph()
 
 if __name__ == "__main__":
-    example_order = {"order_id":"A12345"}
-    convo = [HumanMessage(content="Por favor, cancele meu pedido A12345.")]
+    example_order = {"order_id":"B73973"}
+    convo = [HumanMessage(content='''Por favor, cancele meu pedido #B73973.
+                                  Encontrei uma opção mais barata em outro lugar''')]
     result = graph.invoke({"order":example_order, "messages":convo})
+
     for msg in result["messages"]:
         print(f"{msg.type}: {msg.content}")
+
+
+    assert any("cancel_order" in str(m.content) for m in result["messages"]), "A ferramenta cancel_order não foi chamada"
+
+    assert any("cancelado" in m.content.lower() for m in result["messages"]), "Mensagem de confirmação de cancelamento não encontrada."
+
 
 
