@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h2>🎤 Assistente de Voz</h2>
+
+<button onclick="start()">Falar</button>
+<button onclick="stop()">Parar</button>
+
+<script>
+let ws;
+let audioContext;
+let processor;
+let input;
+let globalStream;
+
+async function start() {
+    ws = new WebSocket("ws://localhost:5050/voice");
+
+    ws.onopen = () => console.log("✅ Conectado");
+
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.audio) {
+            playAudio(data.audio);
+        }
+    };
+
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    globalStream = stream;
+
+    audioContext = new AudioContext({ sampleRate: 16000 });
+
+    input = audioContext.createMediaStreamSource(stream);
+    processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+    processor.onaudioprocess = (e) => {
+        const inputData = e.inputBuffer.getChannelData(0);
+        const pcm16 = floatTo16BitPCM(inputData);
+        const base64 = base64EncodeAudio(pcm16);
+
+        ws.send(JSON.stringify({ audio: base64 }));
+    };
+
+    input.connect(processor);
+    processor.connect(audioContext.destination);
+}
+
+function stop() {
+    processor.disconnect();
+    input.disconnect();
+    globalStream.getTracks().forEach(track => track.stop());
+
+    // 🔥 AVISA O BACKEND QUE PAROU
+    ws.send(JSON.stringify({ stop: true }));
+}
+
+function floatTo16BitPCM(float32Array) {
+    const buffer = new ArrayBuffer(float32Array.length * 2);
+    const view = new DataView(buffer);
+
+    let offset = 0;
+    for (let i = 0; i < float32Array.length; i++, offset += 2) {
+        let s = Math.max(-1, Math.min(1, float32Array[i]));
+        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+    }
+
+    return buffer;
+}
+
+function base64EncodeAudio(arrayBuffer) {
+    let binary = '';
+    let bytes = new Uint8Array(arrayBuffer);
+    let len = bytes.byteLength;
+
+    for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+
+    return btoa(binary);
+}
+
+function playAudio(base64Audio) {
+    const binary = atob(base64Audio);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+
+    for (let i = 0; i < len; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+
+    const audioBuffer = audioContext.createBuffer(1, len / 2, 16000);
+    const channelData = audioBuffer.getChannelData(0);
+
+    for (let i = 0; i < channelData.length; i++) {
+        channelData[i] = (bytes[i * 2] | (bytes[i * 2 + 1] << 8)) / 32768;
+    }
+
+    const source = audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(audioContext.destination);
+    source.start();
+}
+</script>
+</body>
+</html>

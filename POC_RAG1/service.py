@@ -27,7 +27,7 @@ def ler_db(caminho):
     corpo = list(map(lambda x: x.split('18:00:00')[-1], corpo))
     corpo.insert(0,cabecario)
     # corpo = "\n___\n".join(corpo)
-    # print(corpo)
+    print(type(corpo))
     return corpo
 
 # ler_db(CAMINHO_DB)
@@ -48,7 +48,10 @@ def vetorizar_chunks(chunks):
     Chroma.from_documents(chunks, OpenAIEmbeddings(), persist_directory='db')
     print("Banco de dados criado")
 
-cria_db_vetor()
+#cria_db_vetor()
+if __name__ == '__main__':
+    #    ler_db(CAMINHO_DB)
+    pass
 
 
 
